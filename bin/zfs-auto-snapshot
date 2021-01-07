@@ -1,0 +1,144 @@
+#!/usr/bin/env bash
+ScriptVersion="2.1.2 (2021/01/07 11:38)"
+DATE_TIME="`date +%Y.%m.%d--%H-%M`"
+#DatE="`date +%Y%m%d%H`"
+#TimE="`date +%H`"
+###################################
+DATASET="`cat /root/dataset`"
+MNT="/root"
+###################################
+YEAR="`date +%Y`"
+MONTH="`date +%m`"
+WEEK_NUMBER="`date +%W`"
+DAY_WEEK="`date +%w`"
+DAY_MONTH="`date +%d`"
+DAY="$DAY_MONTH"
+DAY_NO_PAD="`date +%-d`"
+HOUR="`date +%H`"
+MINUTE="`date +%M`"
+###################################
+# New snapshot. Every hour.
+zfs snapshot ${DATASET}@--$DATE_TIME--auto
+case "x$HOUR" in
+  x00)
+    # New snapshot. Daily.
+    zfs snapshot ${DATASET}@--$DATE_TIME--daily
+
+    # New snapshot. Weekly. 
+    # FIXME NO_DESTROY_DATASET >> DESTROY
+    case "x$DAY_WEEK" in
+      x0)
+        zfs snapshot ${DATASET}@--$DATE_TIME--WEEKLY--$WEEK_NUMBER
+        ;;
+    esac
+
+    # New snapshot. Monthly.
+    case "x$DAY" in
+      x01)
+         # New snapshot. Yearly.
+         case "x$MONTH" in
+           x01|x1)
+             zfs snapshot ${DATASET}@--$DATE_TIME--YEARLY
+             ;;
+           x*)
+             zfs snapshot ${DATASET}@--$DATE_TIME--MONTHLY
+             ;;
+         esac
+         ;;
+    esac
+    ;;
+esac
+
+# Remove old snapshots. Hourly.
+case "x$DAY" in
+  x1|x01)
+    case "x$MONTH" in
+      x1|x01)
+        RM_DAY="31"
+        RM_MONTH="12"
+        let RM_YEAR="($YEAR - 1)"
+        ;;
+      x2|x02|x4|x04|x6|x06|x8|x08|x9|x09|x11)
+        RM_DAY="31"
+        let RM_MONTH="($MONTH - 1)"
+        RM_YEAR="$YEAR"
+        ;;
+      x3|x03)
+        LEAP="`[[ $(($YEAR % 4)) -eq 0 ]] && echo $YEAR`"
+        case "x$LEAP" in
+          x)
+            RM_DAY="28"
+            RM_MONTH="02"
+            RM_YEAR="$YEAR"
+            ;;
+          x*)
+            RM_DAY="29"
+            RM_MONTH="02"
+            RM_YEAR="$YEAR"
+            ;;
+        esac
+        ;;
+      x5|x05|x7|x07|x10|x12)
+        RM_DAY="30"
+        let RM_MONTH="($MONTH - 1)"
+        RM_YEAR="$YEAR"
+        ;;
+    esac
+    ;;
+  x*)
+    let RM_DAY="($DAY_NO_PAD - 1)"
+    RM_MONTH="$MONTH"
+    RM_YEAR="$YEAR"
+    ;;
+esac
+
+case "x$RM_MONTH" in
+  x1|x2|x3|x4|x5|x6|x7|x8|x9)
+    RM_MONTH="0${RM_MONTH}"
+    ;;
+esac
+
+case "x$RM_DAY" in
+  x1|x2|x3|x4|x5|x6|x7|x8|x9)
+    RM_DAY="0${RM_DAY}"
+    ;;
+esac
+
+cd $MNT/.zfs/snapshot
+for i in *${RM_YEAR}.${RM_MONTH}.${RM_DAY}--${HOUR}*auto; do
+  if [[ -d "$i" ]]; then
+    echo "Removing ${DATASET}@${i}"
+    zfs destroy ${DATASET}@$i
+  else
+    echo "No snapshot named \"${DATASET}@$i\""
+  fi
+done
+
+# Remove old snapshots. Weekly.
+case "x$DAY_WEEK" in
+  x2|x02)
+    case "x$WEEK_NUMBER" in
+      x1|x01)
+        RM_WEEK_NUMBER="53"
+        ;;
+      x*)
+        let RM_WEEK_NUMBER="($WEEK_NUMBER - 1)"
+        ;;
+    esac
+    ;;
+esac
+cd $MNT/.zfs/snapshot
+for i in *WEEKLY--$RM_WEEK_NUMBER; do
+  if [[ -d "$i" ]]; then
+    echo "Removing ${DATASET}@${i}"
+    zfs destroy ${DATASET}@$i
+  else
+    echo "No snapshot named \"${DATASET}@$i\""
+  fi
+done
+
+# Remove old snapshots. Daily.
+# Remove old snapshots. Monthly.
+# Remove old snapshots. Yearly.
+
+#cd $HOME
