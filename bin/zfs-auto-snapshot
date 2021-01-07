@@ -4,7 +4,7 @@ DATE_TIME="`date +%Y.%m.%d--%H-%M`"
 #DatE="`date +%Y%m%d%H`"
 #TimE="`date +%H`"
 ###################################
-DATASET="`cat /root/dataset`"
+DATASET="`cat /etc/zfs-auto-snp.list`"
 MNT="/root"
 ###################################
 YEAR="`date +%Y`"
