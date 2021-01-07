@@ -1,0 +1,11 @@
+[Unit]
+Description=ZFS Automatic Snapshot Creator Timer
+
+[Timer]
+OnBootSec=0min
+OnCalendar=*-*-01..31 *:00:00
+Peristent=true
+Unit=zfs-auto-snapshot.service
+
+[Install]
+WantedBy=multi-user.target
