@@ -1,0 +1,9 @@
+[Unit]
+Description=ZFS Automatic Snapshot Creator
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/zfs-auto-snapshot
+
+[Install]
+WantedBy=multi-user.target
