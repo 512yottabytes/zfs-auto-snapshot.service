@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+RED='\033[1;31m'
+GREEN='\033[1;32m'
+CYAN='\033[1;36m'
+PURPLE='\033[0;35m'
+NC='\033[0m'
+cp -prv ./systemd/zfs-auto-snapshot.service /etc/systemd/system/.
+cp -prv ./systemd/zfs-auto-snapshot.timer   /etc/systemd/system/.
+cp -prv ./bin/zfs-auto-snapshot /usr/local/bin/.
+chmod +x /usr/local/bin/zfs-auto-snapshot
+echo -e "${GREEN}Enter names of datasets you want to be snapshoted.${NC}"
+echo -e "${GREEN}Names sould be separeted from each other with spaces.${NC}"
+echo -e "${GREEN}e.g.: rpool/ROOT/linux rpool/USERDATA/user rpool/DATA/photos${NC}"
+read DATASETS
+echo "$DATASETS" >> /etc/zfs-auto-snp.list
+systemctl enable --now zfs-auto-snapshot.timer
+systemctl enable --now zfs-auto-snapshot.service
+echo -e "${GREEN}ZFS auto snapshot service has been successfully installed.${NC}"
+echo -e "${GREEN}Have a nice day!${NC}"
